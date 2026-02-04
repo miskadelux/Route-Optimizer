@@ -12,11 +12,3 @@ CREATE TABLE Stops (
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_stops_routes FOREIGN KEY (district_Number) REFERENCES Routes(district_Number) ON DELETE CASCADE
 );
-INSERT INTO Routes (district_Number, name)
-VALUES (720, 'SDR 0720 – Fridlevstad');
-INSERT INTO Stops (district_Number, lat, lon, mailbox_count)
-VALUES (720, 56.184233, 15.621984, 2);
-SELECT *
-FROM Routes;
-SELECT *
-FROM Stops;
