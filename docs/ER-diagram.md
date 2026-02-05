@@ -1,3 +1,4 @@
+```mermaid
 erDiagram
 ROUTES ||--o{ STOPS : has
 
@@ -15,3 +16,4 @@ ROUTES ||--o{ STOPS : has
         mailbox_count INT
         created_at TIMESTAMP
     }
+```
