@@ -1,6 +1,8 @@
 ```mermaid
 erDiagram
 ROUTES ||--o{ STOPS : has
+STOPS ||--o{ MAILBOXES : has
+
 
     ROUTES  {
         district_number INT PK
@@ -14,6 +16,13 @@ ROUTES ||--o{ STOPS : has
         lat DECIMAL
         lon DECIMAL
         mailbox_count INT
+        mailbox_status text
         created_at TIMESTAMP
+    }
+
+    MAILBOXES {
+    id INT PK,
+    stop_id INT FK,
+    status VARCHAR(50)
     }
 ```
