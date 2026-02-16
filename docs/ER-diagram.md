@@ -15,8 +15,6 @@ STOPS ||--o{ MAILBOXES : has
         district_number INT FK
         lat DECIMAL
         lon DECIMAL
-        mailbox_count INT
-        mailbox_status text
         created_at TIMESTAMP
     }
 
