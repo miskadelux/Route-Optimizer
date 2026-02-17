@@ -19,8 +19,8 @@ STOPS ||--o{ MAILBOXES : has
     }
 
     MAILBOXES {
-    id INT PK,
-    stop_id INT FK,
+    id INT PK
+    stop_id INT FK
     status VARCHAR(50)
     }
 ```
