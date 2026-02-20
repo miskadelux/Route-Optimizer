@@ -1,0 +1,2 @@
+# funktioner som hämtar routes
+
