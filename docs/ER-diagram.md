@@ -16,11 +16,13 @@ STOPS ||--o{ MAILBOXES : has
         lat DECIMAL
         lon DECIMAL
         created_at TIMESTAMP
+        UNIQUE lat, lon
     }
 
     MAILBOXES {
     id INT PK
     stop_id INT FK
     status VARCHAR(50)
+    addresses varchar(255) unique
     }
 ```
