@@ -10,8 +10,8 @@
       "server": "localhost",
       "port": 3306,
       "driver": "MySQL",
-      "name": "Route-optimizer",
-      "database": "Route_DB",
+      "name": "route_optimizer",
+      "database": "route_optimizer",
       "username": "root",
       "connectionTimeout": 30
     }
