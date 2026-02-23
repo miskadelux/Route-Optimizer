@@ -2,6 +2,7 @@ import mysql.connector
 from mysql.connector import Error
 from db import get_connection
 
+
 def test_connection():
     try:
         connection = get_connection()
@@ -17,7 +18,7 @@ def test_connection():
             cursor.close()
             connection.close()
             print("connection closed")
-    
+
     except Error as e:
         print("anslutningen misslyckades", e)
 
