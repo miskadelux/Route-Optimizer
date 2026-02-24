@@ -116,6 +116,36 @@ def add_a_new_stop():
             connection.close()
 
 
+# the dropdown funtion for the status of the mailboxes
+@app.route("/status-options", methods=["GET"])
+def dropdown_for_status():
+    try:
+
+        connection = get_connection()
+        cursor = connection.cursor()
+
+        query = """SELECT COLUMN_TYPE 
+                    FROM information_schema.COLUMNS
+                    WHERE TABLE_NAME = 'Mailboxes'
+                        AND COLUMN_NAME = 'mailbox_status'
+                    """
+        cursor.execute(query)
+        result = cursor.fetchone()
+        if result:
+            raw_options = result[0]
+            clean_options = raw_options.replace(
+                "enum(", ""). replace(")", "").replace("'", "").split(",")
+            return jsonify(clean_options)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+    return jsonify([])
+
+
 # get status of the route
 
 
