@@ -4,6 +4,7 @@ from db import get_connection
 
 app = Flask(__name__)
 app.json.ensure_ascii = False
+
 # to get all the routes
 
 
@@ -145,6 +146,37 @@ def dropdown_for_status():
             connection.close()
     return jsonify([])
 
+
+# insert new routes into the database
+@app.route("/new_routes", methods=["POST"])
+def add_new_route():
+    data = request.get_json()
+    district_number = data.get("district_number")
+    name = data.get("name")
+
+    if district_number is None:
+        return jsonify({"message": "district number is required"})
+
+    if name is None:
+        return jsonify({"message": "name is required"})
+
+    try:
+        connection = get_connection
+        cursor = connection.cursor()
+
+        query = "INSERT INTO Routes (district_number, name) VALUES (%s, %s)"
+        cursor.ececute(query, (district_number, name))
+        connection.commit()
+
+        return jsonify({"message": "new route was added"}), 201
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if connection:
+            connection.close()
+        if cursor:
+            cursor.close()
 
 # get status of the route
 
