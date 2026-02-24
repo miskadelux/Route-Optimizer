@@ -21,3 +21,11 @@ CREATE TABLE Mailboxes (
     CONSTRAINT fk_mailboxes_stops FOREIGN KEY (stop_id) REFERENCES Stops(id) ON DELETE CASCADE,
     CONSTRAINT unique_mailbox_address UNIQUE (addresses)
 );
+ALTER TABLE Mailboxes
+MODIFY COLUMN mailbox_status ENUM(
+        'ja tack',
+        'nej tack',
+        'låda saknas',
+        'full',
+        'saknar reklam'
+    ) NOT NULL DEFAULT 'ja tack';
