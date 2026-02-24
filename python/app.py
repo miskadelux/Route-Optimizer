@@ -116,5 +116,39 @@ def add_a_new_stop():
             connection.close()
 
 
+# get status of the route
+
+
+@app.route("/routes/<district_number>/statistics", methods=["GET"])
+def get_the_statistics_of_the_route(district_number):
+    connection = get_connection()
+    cursor = connection.cursor(dictionary=True)
+
+    query = """
+        SELECT r.district_number,
+        COUNT(m.ID) AS Total_mailboxes,
+        SUM(m.mailbox_status = 'ja tack') AS ja_tack_count,
+        SUM(m.mailbox_status = 'nej tack') AS nej_tack_count,
+        SUM(m.mailbox_status = 'full') AS full_count,
+        SUM(m.mailbox_status = 'brevlåda saknas') AS missing_box_count,
+        SUM(m.mailbox_status = 'saknar reklam') AS ads_missing_count
+        FROM Routes r
+        JOIN Stops s ON r.district_number = s.district_number
+        JOIN Mailboxes m ON s.ID = m.stop_id
+        WHERE r.district_number = %s
+        GROUP BY r.district_number;
+"""
+    cursor.execute(query, (district_number,))
+    result = cursor.fetchone()
+
+    cursor.close()
+    connection.close()
+
+    if not result:
+        return jsonify({"error": "route not found"})
+
+    return jsonify(result)
+
+
 if __name__ == "__main__":
     app.run(debug=True)
