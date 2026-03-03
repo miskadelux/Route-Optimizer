@@ -1,3 +1,11 @@
+/*
+Determines whether a route is completed.
+A route is considered completed when no stops
+within the specified district have stop_status = 'pending'.
+Returns TRUE if completed, otherwise FALSE.
+*/
+
+
 CREATE FUNCTION is_route_completed (p_district_number INT)
 RETURNS BOOLEAN
 DETERMINISTIC
@@ -11,5 +19,5 @@ BEGIN
         AND stop_status = 'pending';
 
     RETURN remaining = 0;
-    
+
 END;
