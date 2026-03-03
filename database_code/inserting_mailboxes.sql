@@ -1,6 +1,6 @@
 INSERT INTO Mailboxes (stop_id, mailbox_status, addresses)
 VALUES
-    /*  1  
+    --  1  
      (1, 'nej tack', 'fridlevstad 320'),
      (1, 'nej tack', 'fridlevstad 322'),
      -- 2
@@ -264,7 +264,6 @@ VALUES
      -- 45
      (45, 'ja tack', 'Emmas väg 3'),
      (45, 'ja tack', 'Emmas väg 5'),
-     */
     -- 46
     (46, 'ja tack', 'Emmas väg 7'),
     -- 47
@@ -505,16 +504,15 @@ VALUES
     (107, 'ja tack', 'Harstorpsvägen 19'),
     -- 107
     (107, 'ja tack', 'Harstorpsvägen 25'),
-    (107, 'ja tack', 'Harstorpsvägen 22');
-/*
- -- 109
- (109, 'ja tack', 'Harstorpsvägen 29'),
- -- 110
+    (107, 'ja tack', 'Harstorpsvägen 22'),
+ -- 108
+ (108, 'ja tack', 'Harstorpsvägen 29');
+ -- 119
  (110, 'ja tack', 'Harstorpsvägen 33'),
- -- 111
+ -- 110
  (111, 'ja tack', 'Harstorpsvägen 35'),
  (111, 'ja tack', 'Harstorpsvägen 39'),
- -- 112
+ -- 111
  (112, 'ja tack', 'Harstorpsvägen 26'),
  -- 113
  (113, 'ja tack', 'Harstorpsvägen 41'),
