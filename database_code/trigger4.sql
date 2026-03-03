@@ -5,8 +5,6 @@ is recorded in the Mailbox_Status_Log table.
 The trigger provides an audit trail of all status changes.
 */
 
-DELIMITER //
-
 CREATE TRIGGER log_mailbox_status_change
 AFTER UPDATE ON Mailboxes
 FOR EACH ROW
@@ -20,6 +18,4 @@ BEGIN
         VALUES (OLD.ID, OLD.mailbox_status, NEW.mailbox_status);
     END IF;
 
-END //
-
-DELIMITER ;
+END;
