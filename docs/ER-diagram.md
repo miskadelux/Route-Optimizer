@@ -5,13 +5,13 @@ STOPS ||--o{ MAILBOXES : has
 MAILBOXES ||--o{ Mailbox_status_log : logs
 
 
-    ROUTES  {
+    Routes  {
         district_number INT PK
         name VARCHAR(255)
         timestamp created_at
     }
 
-    STOPS {
+    Stops {
         int id PK
         int district_number FK
         decimal lat
@@ -21,7 +21,7 @@ MAILBOXES ||--o{ Mailbox_status_log : logs
         timestamp completed_at 
     }
 
-    MAILBOXES {
+    Mailboxes {
         int id PK
         int stop_id FK
         string status 
