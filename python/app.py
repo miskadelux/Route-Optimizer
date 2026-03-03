@@ -161,11 +161,11 @@ def add_new_route():
         return jsonify({"message": "name is required"})
 
     try:
-        connection = get_connection
+        connection = get_connection()
         cursor = connection.cursor()
 
         query = "INSERT INTO Routes (district_number, name) VALUES (%s, %s)"
-        cursor.ececute(query, (district_number, name))
+        cursor.execute(query, (district_number, name))
         connection.commit()
 
         return jsonify({"message": "new route was added"}), 201
@@ -181,7 +181,7 @@ def add_new_route():
 # get status of the route
 
 
-@app.route("/routes/<district_number>/statistics", methods=["GET"])
+@app.route("/routes/<int:district_number>/statistics", methods=["GET"])
 def get_the_statistics_of_the_route(district_number):
     connection = get_connection()
     cursor = connection.cursor(dictionary=True)
