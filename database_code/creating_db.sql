@@ -42,6 +42,6 @@ CREATE TABLE mailbox_status_log (
     mailbox_id INT not NULL,
     old_status Varchar(255),
     new_status Varchar(255),
-    change_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    changed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (mailbox_id) REFERENCES Mailboxes(ID)
 );
