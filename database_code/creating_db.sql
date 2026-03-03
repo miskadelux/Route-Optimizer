@@ -29,3 +29,11 @@ MODIFY COLUMN mailbox_status ENUM(
         'full',
         'saknar reklam'
     ) NOT NULL DEFAULT 'ja tack';
+CREATE TABLE mailbox_status_log (
+    ID INT PRIMARY KEY AUTO_INCREMENT,
+    mailbox_id INT not NULL,
+    old_status Varchar(255),
+    new_status Varchar(255),
+    change_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (mailbox_id) REFERENCES Mailboxes(ID)
+);
