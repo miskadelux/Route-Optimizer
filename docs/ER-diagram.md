@@ -1,8 +1,8 @@
 ```mermaid
 erDiagram
-ROUTES ||--o{ STOPS : has
-STOPS ||--o{ MAILBOXES : has
-MAILBOXES ||--o{ Mailbox_status_log : logs
+Routes ||--o{ Stops : has
+Stops ||--o{ Mailboxes : has
+Mailboxes ||--o{ Mailbox_status_log : logs
 
 
     Routes  {
