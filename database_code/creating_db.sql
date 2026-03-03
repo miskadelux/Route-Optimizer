@@ -22,6 +22,8 @@ CREATE TABLE Stops (
         REFERENCES Routes(district_Number) 
         ON DELETE CASCADE
 );
+
+
 CREATE TABLE Mailboxes (
     ID int PRIMARY KEY AUTO_INCREMENT,
     stop_id int NOT NULL,
