@@ -504,9 +504,9 @@ VALUES
     (107, 'ja tack', 'Harstorpsvägen 19'),
     -- 107
     (107, 'ja tack', 'Harstorpsvägen 25'),
-    (107, 'ja tack', 'Harstorpsvägen 22'),
+    (107, 'ja tack', 'Harstorpsvägen 22');
  -- 108
- (108, 'ja tack', 'Harstorpsvägen 29');
+ (108, 'ja tack', 'Harstorpsvägen 29'),
  -- 119
  (110, 'ja tack', 'Harstorpsvägen 33'),
  -- 110
