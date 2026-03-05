@@ -1,11 +1,13 @@
 # huvudprogrammet som ska innehålla själva UI
 from flask import Flask, jsonify, request
+from flask_cors import CORS
 from db import get_connection
 from math import radians, sin, cos, sqrt, atan2
 
 
 app = Flask(__name__)
 app.json.ensure_ascii = False
+CORS(app)
 
 def haversine(lat1, lon1, lat2, lon2):
     R = 6371
