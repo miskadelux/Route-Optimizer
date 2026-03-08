@@ -1,12 +1,14 @@
--- a trigger that check that the status of a new created mailbox is valid
-CREATE TRIGGER validate_mailbox_status_insert BEFORE
-INSERT ON Mailboxes FOR EACH ROW BEGIN IF NEW.mailbox_status NOT IN (
-        'ja tack',
-        'nej tack',
-        'full',
-        'brevlåda saknas',
-        'saknar reklam'
-    ) THEN SIGNAL SQLSTATE '45000'
-SET MESSAGE_TEXT = 'Invalid mailbox status it has to be one of this: ja tack, nej tack, full, brevlåda saknas ,saknar reklam';
+CREATE TRIGGER update_route_when_completed
+AFTER
+UPDATE ON Stops FOR EACH ROW BEGIN
+DECLARE done BOOLEAN;
+IF OLD.stop_status <> NEW.stop_status THEN
+SET done = is_route_completed(NEW.district_number);
+IF done THEN
+UPDATE Routes
+SET completed_at = CURRENT_TIMESTAMP
+WHERE district_Number = NEW.district_Number
+    AND completed_at IS NULL;
+END IF;
 END IF;
 END;

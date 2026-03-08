@@ -1,10 +1,11 @@
-# ska hantera databaskopplingen 
+# ska hantera databaskopplingen
 
 import os
 from dotenv import load_dotenv
 import mysql.connector
 
 load_dotenv()
+
 
 def get_connection():
     return mysql.connector.connect(
@@ -13,6 +14,7 @@ def get_connection():
         password=os.getenv("DB_PASSWORD"),
         database=os.getenv("DB_NAME")
     )
+
 
 print(os.getenv("DB_HOST"))
 print(os.getenv("DB_USER"))

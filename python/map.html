@@ -14,6 +14,8 @@
         <select id="route-selector">
             <option>Laddar routes...</option>
         </select>
+        <button onclick="deleteRoute()" style="color:red; margin-left:5px;">🗑️</button>
+        </div>
     </div>
 
     <!-- Statistik-panel -->
@@ -51,7 +53,7 @@
             })
             .then(r => r.json())
             .then(() => alert(' Status uppdaterad!'))
-            .catch(() => alert(' Något gick fel'));
+            .catch(() => alert(' det gick inte att uppdatera statusen'));
         }
 
         // ── Lägg till mailbox från karta ──────────────────────
@@ -73,6 +75,25 @@
                 <button onclick="closeForm()">Avbryt</button>
             `;
         }
+        function deleteStop(stopId) {
+            if (!confirm('Ta bort detta stop och alla dess mailboxes?')) return;
+            fetch(`http://127.0.0.1:5000/stops/${stopId}`, {method: 'DELETE'})
+                .then(r => r.json())
+                .then(() => {
+                    loadRoute(document.getElementById('route-selector').value);
+                })
+                .catch(() => alert('Det gick inte att ta bort denna stop'));
+        }
+
+        function deleteMailbox(mailboxId) {
+            if (!confirm('Ta bort denna mailbox?')) return;
+            fetch(`http://127.0.0.1:5000/mailboxes/${mailboxId}`, {method: 'DELETE'})
+                .then(r => r.json())
+                .then(() => {
+                    loadRoute(document.getElementById('route-selector').value);
+                })
+                .catch(() => alert(' Det gick inte att ta bort denna mailbox'));
+        }
 
         function submitMailboxFromMap(stopId) {
             const address = document.getElementById('f-address').value;
@@ -84,7 +105,7 @@
             })
             .then(r => r.json())
             .then(() => {
-                alert('✅ Mailbox tillagd!');
+                alert('Mailbox tillagd!');
                 closeForm();
                 loadRoute(document.getElementById('route-selector').value);
             });
@@ -151,7 +172,7 @@
             })
             .then(r => r.json())
             .then(() => {
-                alert('✅ Route skapad!');
+                alert('Route skapad!');
                 closeForm();
                 location.reload();
             });
@@ -190,6 +211,27 @@
                 loadRoute(document.getElementById('route-selector').value);
             });
         }
+            function deleteRoute() {
+        const district = document.getElementById('route-selector').value;
+        if (!confirm(`Ta bort route ${district} och alla dess stops och mailboxes?`)) return;
+        fetch(`http://127.0.0.1:5000/routes/${district}`, {method: 'DELETE'})
+            .then(r => r.json())
+            .then(() => {
+                alert(' Route borttagen!');
+                location.reload();
+            })
+            .catch(() => alert('Det gick inte att ta bort routen'));
+    }
+
+    function completeStop(stopId) {
+        if (!confirm('Markera detta stop som klart?')) return;
+        fetch(`http://127.0.0.1:5000/stops/${stopId}/completed`, {method: 'PUT'})
+            .then(r => r.json())
+            .then(() => {
+                loadRoute(document.getElementById('route-selector').value);
+            })
+            .catch(() => alert(' Det gick inte att markera stoppet'));
+    }
 
         // ── Ladda en route på kartan ──────────────────────────
         function loadRoute(districtNumber) {
@@ -214,7 +256,8 @@
                         data.optimized_stops.forEach(stop => {
                             const mailboxHtml = stop.mailboxes.length > 0
                                 ? stop.mailboxes.map(m => `
-                                    <b>${m.address}</b><br>
+                                    <b>${m.address}</b>
+                                    <button onclick="deleteMailbox(${m.mailbox_id})" style="color:red; border:none; background:none; cursor:pointer; font-size:14px;">🗑️</button><br>
                                     <select id="status-${m.mailbox_id}">
                                         <option value="ja tack"         ${m.status === 'ja tack'         ? 'selected' : ''}>ja tack</option>
                                         <option value="nej tack"        ${m.status === 'nej tack'        ? 'selected' : ''}>nej tack</option>
@@ -228,9 +271,15 @@
                                 : '<i>Inga mailboxes</i><br>';
 
                             // ← lägg till mailbox-knappen här, inuti forEach
-                            const fullPopup = mailboxHtml + `
-                                <button onclick="showAddMailbox(${stop.stop_id})">➕ Lägg till mailbox</button>
-                            `;
+                           const fullPopup = mailboxHtml + `
+                            <button onclick="showAddMailbox(${stop.stop_id})"> Lägg till mailbox</button>
+                            <br><br>
+                            <button onclick="deleteStop(${stop.stop_id})" style="color:red;">Ta bort stop</button>
+                            <br>
+                            <button onclick="completeStop(${stop.stop_id})" style="color:green;">✅ Markera som klar</button>
+                            <br>
+                            <button onclick="deleteStop(${stop.stop_id})" style="color:red;">🗑️ Ta bort stop</button>
+                        `;
 
                             L.marker([stop.lat, stop.lon]).addTo(map).bindPopup(fullPopup);
                         });
