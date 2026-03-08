@@ -2,28 +2,282 @@
 <html>
 <head>
     <title>Route Optimizer</title>
-    <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
     <style>
-        #map {
-            height: 100vh;
-            width: 100%;
-        }
+        #map { height: 100vh; width: 100%; }
     </style>
 </head>
 <body>
+
+    <!-- Route dropdown -->
+    <div style="position:absolute; top:10px; left:50px; z-index:1000; background:white; padding:10px; border-radius:5px; box-shadow:0 0 5px rgba(0,0,0,0.3)">
+        <select id="route-selector">
+            <option>Laddar routes...</option>
+        </select>
+    </div>
+
+    <!-- Statistik-panel -->
+    <div style="position:absolute; top:10px; right:10px; z-index:1000; background:white; padding:15px; border-radius:5px; box-shadow:0 0 5px rgba(0,0,0,0.3); min-width:180px;">
+        <h3 style="margin:0 0 10px 0; font-size:14px;">Statistik</h3>
+        <p style="margin:5px 0;">Stops kvar: <b id="stops-kvar">-</b></p>
+        <p style="margin:5px 0;">Mailboxes kvar: <b id="mailboxes-kvar">-</b></p>
+        <p style="margin:5px 0;">Km kvar: <b id="km-kvar">-</b></p>
+    </div>
+
+    <!-- Knappar -->
+    <div style="position:absolute; bottom:20px; left:50px; z-index:1000; background:white; padding:15px; border-radius:5px; box-shadow:0 0 5px rgba(0,0,0,0.3);">
+        <button onclick="showForm('route')">Ny Route</button>
+        <button onclick="showForm('stop')">Nytt Stop</button>
+    </div>
+
+    <!-- Formulär-panel -->
+    <div id="form-panel" style="display:none; position:absolute; bottom:80px; left:50px; z-index:1000; background:white; padding:15px; border-radius:5px; box-shadow:0 0 5px rgba(0,0,0,0.3); min-width:220px;">
+    </div>
+
     <div id="map"></div>
 
-    <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         const map = L.map('map').setView([56.27, 15.54], 13);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-        fetch('http://127.0.0.1:5000/routes/720/optimized-stops')
+
+        // ── Uppdatera status på en mailbox ────────────────────
+        function updateStatus(mailboxId) {
+            const newStatus = document.getElementById(`status-${mailboxId}`).value;
+            fetch(`http://127.0.0.1:5000/mailboxes/${mailboxId}`, {
+                method: 'PUT',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({mailbox_status: newStatus})
+            })
+            .then(r => r.json())
+            .then(() => alert(' Status uppdaterad!'))
+            .catch(() => alert(' Något gick fel'));
+        }
+
+        // ── Lägg till mailbox från karta ──────────────────────
+        function showAddMailbox(stopId) {
+            const panel = document.getElementById('form-panel');
+            panel.style.display = 'block';
+            panel.innerHTML = `
+                <h3 style="margin:0 0 10px 0"> Ny Mailbox</h3>
+                <p>Stop ID: <b>${stopId}</b></p>
+                <input id="f-address" type="text" placeholder="Adress" style="width:100%; margin-bottom:5px"><br>
+                <select id="f-status" style="width:100%; margin-bottom:10px">
+                    <option value="ja tack">ja tack</option>
+                    <option value="nej tack">nej tack</option>
+                    <option value="full">full</option>
+                    <option value="brevlåda saknas">brevlåda saknas</option>
+                    <option value="saknar reklam">saknar reklam</option>
+                </select><br>
+                <button onclick="submitMailboxFromMap(${stopId})">Spara</button>
+                <button onclick="closeForm()">Avbryt</button>
+            `;
+        }
+
+        function submitMailboxFromMap(stopId) {
+            const address = document.getElementById('f-address').value;
+            const status = document.getElementById('f-status').value;
+            fetch('http://127.0.0.1:5000/mailboxes', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({stop_id: stopId, addresses: address, mailbox_status: status})
+            })
+            .then(r => r.json())
+            .then(() => {
+                alert('✅ Mailbox tillagd!');
+                closeForm();
+                loadRoute(document.getElementById('route-selector').value);
+            });
+        }
+
+        // ── Formulär ──────────────────────────────────────────
+        function showForm(type) {
+            const panel = document.getElementById('form-panel');
+            panel.style.display = 'block';
+
+            if (type === 'route') {
+                panel.innerHTML = `
+                    <h3 style="margin:0 0 10px 0">Ny Route</h3>
+                    <input id="f-district" type="number" placeholder="District number" style="width:100%; margin-bottom:5px"><br>
+                    <input id="f-name" type="text" placeholder="Namn på route" style="width:100%; margin-bottom:10px"><br>
+                    <button onclick="submitRoute()">Spara</button>
+                    <button onclick="closeForm()">Avbryt</button>
+                `;
+            } else if (type === 'stop') {
+                panel.innerHTML = `
+                    <h3 style="margin:0 0 10px 0">Nytt Stop</h3>
+                    <input id="f-lat" type="number" step="any" placeholder="Latitude" style="width:100%; margin-bottom:5px"><br>
+                    <input id="f-lon" type="number" step="any" placeholder="Longitude" style="width:100%; margin-bottom:5px"><br>
+                    <button onclick="useMyLocation()">Använd min position</button><br><br>
+                    <button onclick="submitStop()">Spara</button>
+                    <button onclick="closeForm()">Avbryt</button>
+                `;
+            } else if (type === 'mailbox') {
+                panel.innerHTML = `
+                    <h3 style="margin:0 0 10px 0">Ny Mailbox</h3>
+                    <input id="f-stop-id" type="number" placeholder="Stop ID" style="width:100%; margin-bottom:5px"><br>
+                    <input id="f-address" type="text" placeholder="Adress" style="width:100%; margin-bottom:5px"><br>
+                    <select id="f-status" style="width:100%; margin-bottom:10px">
+                        <option value="ja tack">ja tack</option>
+                        <option value="nej tack">nej tack</option>
+                        <option value="full">full</option>
+                        <option value="brevlåda saknas">brevlåda saknas</option>
+                        <option value="saknar reklam">saknar reklam</option>
+                    </select><br>
+                    <button onclick="submitMailbox()">Spara</button>
+                    <button onclick="closeForm()">Avbryt</button>
+                `;
+            }
+        }
+
+        function closeForm() {
+            document.getElementById('form-panel').style.display = 'none';
+        }
+
+        function useMyLocation() {
+            navigator.geolocation.getCurrentPosition(pos => {
+                document.getElementById('f-lat').value = pos.coords.latitude;
+                document.getElementById('f-lon').value = pos.coords.longitude;
+            });
+        }
+
+        function submitRoute() {
+            const district = document.getElementById('f-district').value;
+            const name = document.getElementById('f-name').value;
+            fetch('http://127.0.0.1:5000/new_routes', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({district_number: parseInt(district), name: name})
+            })
+            .then(r => r.json())
+            .then(() => {
+                alert('✅ Route skapad!');
+                closeForm();
+                location.reload();
+            });
+        }
+
+        function submitStop() {
+            const lat = document.getElementById('f-lat').value;
+            const lon = document.getElementById('f-lon').value;
+            const district = document.getElementById('route-selector').value;
+            fetch('http://127.0.0.1:5000/stops', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({lat: parseFloat(lat), lon: parseFloat(lon), district_number: parseInt(district)})
+            })
+            .then(r => r.json())
+            .then(() => {
+                alert('✅ Stop tillagt!');
+                closeForm();
+                loadRoute(district);
+            });
+        }
+
+        function submitMailbox() {
+            const stopId = document.getElementById('f-stop-id').value;
+            const address = document.getElementById('f-address').value;
+            const status = document.getElementById('f-status').value;
+            fetch('http://127.0.0.1:5000/mailboxes', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({stop_id: parseInt(stopId), addresses: address, mailbox_status: status})
+            })
+            .then(r => r.json())
+            .then(() => {
+                alert('✅ Mailbox tillagd!');
+                closeForm();
+                loadRoute(document.getElementById('route-selector').value);
+            });
+        }
+
+        // ── Ladda en route på kartan ──────────────────────────
+        function loadRoute(districtNumber) {
+            map.eachLayer(layer => {
+                if (layer instanceof L.Marker || layer instanceof L.Polyline) {
+                    map.removeLayer(layer);
+                }
+            });
+
+            navigator.geolocation.getCurrentPosition(position => {
+                const homeLat = position.coords.latitude;
+                const homeLon = position.coords.longitude;
+
+                L.marker([homeLat, homeLon])
+                    .addTo(map)
+                    .bindPopup('Din startposition')
+                    .openPopup();
+
+                fetch(`http://127.0.0.1:5000/routes/${districtNumber}/optimized-stops`)
+                    .then(response => response.json())
+                    .then(data => {
+                        data.optimized_stops.forEach(stop => {
+                            const mailboxHtml = stop.mailboxes.length > 0
+                                ? stop.mailboxes.map(m => `
+                                    <b>${m.address}</b><br>
+                                    <select id="status-${m.mailbox_id}">
+                                        <option value="ja tack"         ${m.status === 'ja tack'         ? 'selected' : ''}>ja tack</option>
+                                        <option value="nej tack"        ${m.status === 'nej tack'        ? 'selected' : ''}>nej tack</option>
+                                        <option value="full"            ${m.status === 'full'            ? 'selected' : ''}>full</option>
+                                        <option value="brevlåda saknas" ${m.status === 'brevlåda saknas' ? 'selected' : ''}>brevlåda saknas</option>
+                                        <option value="saknar reklam"   ${m.status === 'saknar reklam'   ? 'selected' : ''}>saknar reklam</option>
+                                    </select>
+                                    <button onclick="updateStatus(${m.mailbox_id})">Spara</button>
+                                    <hr>
+                                `).join('')
+                                : '<i>Inga mailboxes</i><br>';
+
+                            // ← lägg till mailbox-knappen här, inuti forEach
+                            const fullPopup = mailboxHtml + `
+                                <button onclick="showAddMailbox(${stop.stop_id})">➕ Lägg till mailbox</button>
+                            `;
+
+                            L.marker([stop.lat, stop.lon]).addTo(map).bindPopup(fullPopup);
+                        });
+
+                        const allCoords = [
+                            [homeLat, homeLon],
+                            ...data.optimized_stops.map(s => [s.lat, s.lon])
+                        ];
+                        map.fitBounds(allCoords);
+
+                        const pendingStops = data.optimized_stops.filter(s => s.stop_status === 'pending').length;
+                        const pendingMailboxes = data.optimized_stops
+                            .flatMap(s => s.mailboxes)
+                            .filter(m => m.status === 'ja tack').length;
+
+                        document.getElementById('stops-kvar').textContent = pendingStops;
+                        document.getElementById('mailboxes-kvar').textContent = pendingMailboxes;
+                        document.getElementById('km-kvar').textContent = data.total_distance_in_km + ' km';
+
+                        const coords = data.optimized_stops
+                            .map(stop => `${stop.lon},${stop.lat}`)
+                            .join(';');
+
+                        fetch(`http://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson`)
+                            .then(response => response.json())
+                            .then(osrm => {
+                                const latlngs = osrm.routes[0].geometry.coordinates
+                                    .map(coord => [coord[1], coord[0]]);
+                                L.polyline(latlngs, {color: 'blue', weight: 3}).addTo(map);
+                            });
+                    });
+            });
+        }
+
+        // ── Fyll dropdown och starta ──────────────────────────
+        fetch('http://127.0.0.1:5000/routes')
             .then(response => response.json())
-            .then(data => {
-                console.log(data);
-        });
+            .then(routes => {
+                const selector = document.getElementById('route-selector');
+                selector.innerHTML = routes.map(r =>
+                    `<option value="${r.district_Number}">${r.name}</option>`
+                ).join('');
+                loadRoute(selector.value);
+                selector.addEventListener('change', () => {
+                    loadRoute(selector.value);
+                });
+            });
     </script>
 </body>
 </html>
