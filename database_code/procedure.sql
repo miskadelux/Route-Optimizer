@@ -12,7 +12,7 @@ BEGIN
     )
     THEN 
         SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Route does not exist'
+        SET MESSAGE_TEXT = 'Route does not exist';
     END IF;
 
     INSERT INTO Stops (lat, lon, district_number)
