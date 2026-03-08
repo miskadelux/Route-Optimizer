@@ -276,10 +276,8 @@
                             <br><br>
                             <button onclick="deleteStop(${stop.stop_id})" style="color:red;">Ta bort stop</button>
                             <br>
-                            <button onclick="completeStop(${stop.stop_id})" style="color:green;">✅ Markera som klar</button>
-                            <br>
-                            <button onclick="deleteStop(${stop.stop_id})" style="color:red;">🗑️ Ta bort stop</button>
-                        `;
+                            <button onclick="completeStop(${stop.stop_id})" style="color:green;">Markera som klar</button>
+                            `;
 
                             L.marker([stop.lat, stop.lon]).addTo(map).bindPopup(fullPopup);
                         });

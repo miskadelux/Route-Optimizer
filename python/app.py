@@ -118,24 +118,22 @@ def add_a_new_stop():
 
     lat = data.get("lat")
     lon = data.get("lon")
-    district = data.get("district_number")
+    district_number = data.get("district_number")
 
     if lat is None:
         return jsonify({"error": "lat field is required"}), 400
     if lon is None:
         return jsonify({"error": "lon field is required"}), 400
-    if district is None:
+    if district_number is None:
         return jsonify({"error": "district is required"}), 400
 
     try:
         connection = get_connection()
         cursor = connection.cursor()
 
-        query = """
-                INSERT INTO Stops (lat, lon, district_number) 
-                VALUES (%s, %s, %s)
-            """
-        cursor.execute(query, (lat, lon, district))
+        query = "CALL add_stop_to_route(%s, %s, %s)",
+        (district_number, lat, lon)
+        cursor.execute(query, (lat, lon, district_number))
         connection.commit()
 
         return jsonify({"message": "New Stop was inserted"}), 201
