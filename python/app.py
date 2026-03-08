@@ -9,6 +9,7 @@ app = Flask(__name__)
 app.json.ensure_ascii = False
 CORS(app)
 
+
 def haversine(lat1, lon1, lat2, lon2):
     R = 6371
     lat1, lon1, lat2, lon2 = map(radians, [lat1, lon1, lat2, lon2])
@@ -17,10 +18,11 @@ def haversine(lat1, lon1, lat2, lon2):
     a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
     return R * 2 * atan2(sqrt(a), sqrt(1-a))
 
+
 def nearest_neighbor(stops):
     if not stops:
         return [], 0
-    
+
     unvisited = stops.copy()
     route = [unvisited.pop(0)]
 
@@ -28,12 +30,14 @@ def nearest_neighbor(stops):
         current = route[-1]
         nearest = min(
             unvisited,
-            key=lambda s: haversine(current["lat"], current["lon"], s["lat"], s["lon"])
+            key=lambda s: haversine(
+                current["lat"], current["lon"], s["lat"], s["lon"])
         )
         route.append(nearest)
         unvisited.remove(nearest)
     total_distance = sum(
-        haversine(route[i]["lat"], route[i]["lon"], route[i+1]["lat"], route[i+1]["lon"])
+        haversine(route[i]["lat"], route[i]["lon"],
+                  route[i+1]["lat"], route[i+1]["lon"])
         for i in range(len(route) - 1)
     )
 
@@ -73,7 +77,7 @@ def get_route_details(district_number):
             WHERE r.district_Number = %s
             ORDER BY s.ID,
                 m.ID;
-            """ 
+            """
         cursor.execute(query, (district_number,))
         data = cursor.fetchall()
 
@@ -116,6 +120,26 @@ def add_new_route():
         connection.close()
         cursor.close()
 
+
+@app.route("/routes/<int:district_number>", methods=["DELETE"])
+def remove_route(district_number):
+    try:
+        connection = get_connection()
+        cursor = connection.cursor()
+        cursor.execute("""
+                DELETE FROM Routes
+                WHERE distruct_number = %s
+                """, district_number)
+        connection.commit()
+        if cursor.rowcount == 0:
+            return jsonify({"error": "There is no route with that number"}), 404
+        return jsonify({"message": f" {district_number} was deleted succefully"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
+        connection.close()
+
 # Update and add status to a mailbox
 
 
@@ -155,7 +179,7 @@ def get_stops_with_gps(district_number):
         """
         cursor.execute(query, (district_number,))
         rows = cursor.fetchall()
-                # Group mailboxes under their parent stop
+        # Group mailboxes under their parent stop
         stops = {}
         for row in rows:
             sid = row["stop_id"]
@@ -220,6 +244,24 @@ def add_a_new_stop():
         cursor.close()
         connection.close()
 
+
+@app.route("/stops/<int:stop_id>", methods=["DELETE"])
+def delete_stop(stop_id):
+    try:
+        connection = get_connection()
+        cursor = connection.cursor()
+        cursor.execute("DELETE FROM Stops WHERE ID = %s", (stop_id,))
+        connection.commit()
+        if cursor.rowcount == 0:
+            return jsonify({"error": "Stop not found"}), 404
+        return jsonify({"message": "Stop deleted"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
+        connection.close()
+
+
 @app.route("/stops/<int:stops_id>/completed", methods=["PUT"])
 def completed_stop(stops_id):
     try:
@@ -236,15 +278,12 @@ def completed_stop(stops_id):
         if cursor.rowcount == 0:
             return jsonify({"error": "stop does not exist"}), 404
         return jsonify({"message": "stop was successfully completed"})
-    
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     finally:
         cursor.close()
         connection.close()
-
-
-
 
 
 # get status of the route
@@ -258,7 +297,7 @@ def update_mailbox_status(mailbox_id):
     try:
         connection = get_connection()
         cursor = connection.cursor()
-    
+
         query = """
             UPDATE Mailboxes
             SET Mailbox_status = %s
@@ -266,19 +305,67 @@ def update_mailbox_status(mailbox_id):
         """
         cursor.execute(query, (new_status, mailbox_id))
         connection.commit()
-        
-        return jsonify({"message": "mailbox is updated"})
 
+        return jsonify({"message": "mailbox is updated"})
 
     except Exception as e:
         return jsonify({"error": str(e)})
     finally:
         cursor.close()
-        connection.close() 
+        connection.close()
+
+
+@app.route("/mailboxes", methods=["POST"])
+def add_mailbox():
+    data = request.get_json()
+    stop_id = data.get("stop_id")
+    address = data.get("addresses")
+    status = data.get("mailbox_status", "ja tack")
+
+    if stop_id is None:
+        return jsonify({"error": "stop_id is required"}), 400
+    if address is None:
+        return jsonify({"error": "addresses is required"}), 400
+
+    try:
+        connection = get_connection()
+        cursor = connection.cursor()
+        cursor.execute(
+            "CALL add_mailbox_to_stop(%s, %s, %s)",
+            (stop_id, address, status)
+        )
+        connection.commit()
+        return jsonify({"message": "Mailbox added"}), 201
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
+        connection.close()
+
+
+@app.route("/mailboxes/<int:mailbox_id>", methods=["DELETE"])
+def remove_mailbox(mailbox_id):
+    try:
+        connection = get_connection()
+        cursor = connection.cursor()
+        cursor.execute("""
+                DELETE FROM Routes
+                WHERE mailbox_id = %s
+                """, mailbox_id)
+        connection.commit()
+        if cursor.rowcount == 0:
+            return jsonify({"error": "There is no route with that number"}), 404
+        return jsonify({"message": f" mailbox with ID ({mailbox_id}) was deleted succefully"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
+        connection.close()
+
 
 @app.route("/routes/<int:district_number>/statistics", methods=["GET"])
 def get_the_statistics_of_the_route(district_number):
-    
+
     try:
         connection = get_connection()
         cursor = connection.cursor(dictionary=True)
@@ -304,14 +391,15 @@ def get_the_statistics_of_the_route(district_number):
             return jsonify({"error": "route does not exist"}), 404
         return jsonify(result)
 
-
     except Exception as e:
-        return jsonify({"error": "route not found"})    
+        return jsonify({"error": "route not found"})
     finally:
         cursor.close()
-        connection.close()    
+        connection.close()
 
 # the dropdown funtion for the status of the mailboxes
+
+
 @app.route("/status-options", methods=["GET"])
 def dropdown_for_status():
 
@@ -331,7 +419,7 @@ def dropdown_for_status():
             clean_options = raw_options.replace(
                 "enum(", ""). replace(")", "").replace("'", "").split(",")
             return jsonify(clean_options)
-        
+
         return jsonify([])
 
     except Exception as e:
@@ -358,7 +446,7 @@ def route_optimizer(district_number):
 
         if not cursor.fetchone():
             return jsonify({"error": f" Route {district_number} does not exits"}), 404
-        
+
         query = """
             SELECT
             s.ID AS stop_id,
@@ -399,21 +487,20 @@ def route_optimizer(district_number):
         stop_list = (list(stops.values()))
 
         if not stop_list:
-            return jsonify({"message" : " There are no pending stops on this route"})
-        
+            return jsonify({"message": " There are no pending stops on this route"})
+
         optimized, total_distance = nearest_neighbor(stop_list)
 
         return jsonify({
-            "total_stops" : len(optimized),
-            "total_distance_in_km" : total_distance,
-            "optimized_stops" : optimized
+            "total_stops": len(optimized),
+            "total_distance_in_km": total_distance,
+            "optimized_stops": optimized
         })
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     finally:
         cursor.close()
         connection.close()
-
 
 
 if __name__ == "__main__":
