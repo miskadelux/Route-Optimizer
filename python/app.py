@@ -260,6 +260,37 @@ def insert_mailbox():
         connection.close()
     
 
+
+@app.route("/mailboxes", methods=["POST"])
+def insert_mailbox():
+    data = request.get_json()
+    stop_id = data.get("stop_id")
+    address = data.get("addresses")
+    status = data.get("mailbox_status")
+
+    if stop_id is None:
+        return jsonify({"error": "you have to write a stop_id"})
+    if address is None:
+        return jsonify({"error" : "you have to write an address"})
+    if status is None:
+        return jsonify({"error": "you have to add a status to the mailbox"})
+    
+    try:
+        connection = get_connection()
+        cursor = connection.cursor()
+        cursor.execute(
+            "CALL insert_mailbox(%s, %s, %s)", (stop_id, address, status)
+        )
+        connection.commit()
+
+        return jsonify({"message": "mailbox was added"}), 201
+    except Exception as e:
+        return jsonify({"error" : str(e)})
+    finally:
+        cursor.close()
+        connection.close()
+    
+
 # the dropdown funtion for the status of the mailboxes
 @app.route("/status-options", methods=["GET"])
 def dropdown_for_status():
