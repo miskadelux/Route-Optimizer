@@ -28,7 +28,7 @@
     <div style="position:absolute; bottom:20px; left:50px; z-index:1000; background:white; padding:15px; border-radius:5px; box-shadow:0 0 5px rgba(0,0,0,0.3);">
         <button onclick="showForm('route')">Ny Route</button>
         <button onclick="showForm('stop')">Nytt Stop</button>
-        <button onclick="resetRoute()" style="color:orange;">Återställ route</button>
+        <button onclick="resetRoute()" style="color:black;">Återställ route</button>
 
     </div>
 
@@ -255,21 +255,31 @@
             .catch(() => alert(' Det gick inte att markera stoppet'));
     }
 
-        function loadRoute(districtNumber) {
+       function loadRoute(districtNumber) {
             map.eachLayer(layer => {
                 if (layer instanceof L.Marker || layer instanceof L.Polyline) {
                     map.removeLayer(layer);
                 }
             });
 
-            navigator.geolocation.getCurrentPosition(position => {
-                const homeLat = position.coords.latitude;
-                const homeLon = position.coords.longitude;
+            navigator.geolocation.getCurrentPosition(
+                position => {
+                    loadStops(districtNumber, position.coords.latitude, position.coords.longitude);
+                },
+                error => {
+                    loadStops(districtNumber, null, null);
+                }
+            );
+        }
+            
+        function loadStops(districtNumber, homeLat, homeLon) {
 
-                L.marker([homeLat, homeLon])
-                    .addTo(map)
-                    .bindPopup('Din startposition')
-                    .openPopup();
+                if (homeLat !== null) {
+                    L.marker([homeLat, homeLon])
+                        .addTo(map)
+                        .bindPopup('Din startposition')
+                        .openPopup();
+                }
 
                 fetch(`http://127.0.0.1:5000/routes/${districtNumber}/optimized-stops`)
                     .then(response => response.json())
@@ -302,11 +312,10 @@
                             L.marker([stop.lat, stop.lon]).addTo(map).bindPopup(fullPopup);
                         });
 
-                        const allCoords = [
-                            [homeLat, homeLon],
-                            ...data.optimized_stops.map(s => [s.lat, s.lon])
-                        ];
-                        map.fitBounds(allCoords);
+                        const allCoords = homeLat !== null 
+                            ? [[homeLat, homeLon], ...data.optimized_stops.map(s => [s.lat, s.lon])]
+                            : data.optimized_stops.map(s =>  [s.lat, s.lon]);
+                        if (allCoords.length > 0) map.fitBounds(allCoords);
 
                         const pendingStops = data.optimized_stops.filter(s => s.stop_status === 'pending').length;
                         const pendingMailboxes = data.optimized_stops
@@ -329,8 +338,7 @@
                                 L.polyline(latlngs, {color: 'blue', weight: 3}).addTo(map);
                             });
                     });
-            });
-        }
+            };
 
         fetch('http://127.0.0.1:5000/routes')
             .then(response => response.json())

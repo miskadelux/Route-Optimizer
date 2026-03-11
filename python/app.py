@@ -41,6 +41,11 @@ def nearest_neighbor(stops):
         for i in range(len(route) - 1)
     )
 
+    total_distance += haversine(
+        route[-1]["lat"], route[-1]["lon"],
+        route[0]["lat"], route[0]["lon"]
+    )
+
     return route, round(total_distance, 2)
 # to get all the routes
 
@@ -70,7 +75,7 @@ def add_new_route():
 
     if district_number is None:
         return jsonify({"message": "district number is required"})
-    
+
     if name is None:
         return jsonify({"message": "name is required"})
 
