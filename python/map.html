@@ -18,7 +18,6 @@
         </div>
     </div>
 
-    <!-- Statistik-panel -->
     <div style="position:absolute; top:10px; right:10px; z-index:1000; background:white; padding:15px; border-radius:5px; box-shadow:0 0 5px rgba(0,0,0,0.3); min-width:180px;">
         <h3 style="margin:0 0 10px 0; font-size:14px;">Statistik</h3>
         <p style="margin:5px 0;">Stops kvar: <b id="stops-kvar">-</b></p>
@@ -26,13 +25,13 @@
         <p style="margin:5px 0;">Km kvar: <b id="km-kvar">-</b></p>
     </div>
 
-    <!-- Knappar -->
     <div style="position:absolute; bottom:20px; left:50px; z-index:1000; background:white; padding:15px; border-radius:5px; box-shadow:0 0 5px rgba(0,0,0,0.3);">
         <button onclick="showForm('route')">Ny Route</button>
         <button onclick="showForm('stop')">Nytt Stop</button>
+        <button onclick="resetRoute()" style="color:orange;">Återställ route</button>
+
     </div>
 
-    <!-- Formulär-panel -->
     <div id="form-panel" style="display:none; position:absolute; bottom:80px; left:50px; z-index:1000; background:white; padding:15px; border-radius:5px; box-shadow:0 0 5px rgba(0,0,0,0.3); min-width:220px;">
     </div>
 
@@ -42,8 +41,22 @@
     <script>
         const map = L.map('map').setView([56.27, 15.54], 13);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        map.on('click', function(e) {
+    const lat = e.latlng.lat.toFixed(6);
+    const lon = e.latlng.lng.toFixed(6);
+    
+    const panel = document.getElementById('form-panel');
+    panel.style.display = 'block';
+    panel.innerHTML = `
+        <h3 style="margin:0 0 10px 0">Nytt Stop</h3>
+        <input id="f-lat" type="number" step="any" value="${lat}" style="width:100%; margin-bottom:5px"><br>
+        <input id="f-lon" type="number" step="any" value="${lon}" style="width:100%; margin-bottom:5px"><br>
+        <button onclick="useMyLocation()">Använd min position</button><br><br>
+        <button onclick="submitStop()">Spara</button>
+        <button onclick="closeForm()">Avbryt</button>
+    `;
+});
 
-        // ── Uppdatera status på en mailbox ────────────────────
         function updateStatus(mailboxId) {
             const newStatus = document.getElementById(`status-${mailboxId}`).value;
             fetch(`http://127.0.0.1:5000/mailboxes/${mailboxId}`, {
@@ -56,7 +69,17 @@
             .catch(() => alert(' det gick inte att uppdatera statusen'));
         }
 
-        // ── Lägg till mailbox från karta ──────────────────────
+        function resetRoute() {
+            const district = document.getElementById('route-selector').value;
+            if (!confirm('Återställ alla stops till pending?')) return;
+            fetch(`http://127.0.0.1:5000/routes/${district}/reset`, {method: 'PUT'})
+                .then(r => r.json())
+                .then(() => {
+                    loadRoute(district);
+                })
+                .catch(() => alert('Det gick inte att återställa alla Stops'));
+         }
+
         function showAddMailbox(stopId) {
             const panel = document.getElementById('form-panel');
             panel.style.display = 'block';
@@ -111,7 +134,6 @@
             });
         }
 
-        // ── Formulär ──────────────────────────────────────────
         function showForm(type) {
             const panel = document.getElementById('form-panel');
             panel.style.display = 'block';
@@ -189,7 +211,7 @@
             })
             .then(r => r.json())
             .then(() => {
-                alert('✅ Stop tillagt!');
+                alert(' Stop tillagt!');
                 closeForm();
                 loadRoute(district);
             });
@@ -206,7 +228,7 @@
             })
             .then(r => r.json())
             .then(() => {
-                alert('✅ Mailbox tillagd!');
+                alert('Mailbox tillagd!');
                 closeForm();
                 loadRoute(document.getElementById('route-selector').value);
             });
@@ -233,7 +255,6 @@
             .catch(() => alert(' Det gick inte att markera stoppet'));
     }
 
-        // ── Ladda en route på kartan ──────────────────────────
         function loadRoute(districtNumber) {
             map.eachLayer(layer => {
                 if (layer instanceof L.Marker || layer instanceof L.Polyline) {
@@ -270,7 +291,6 @@
                                 `).join('')
                                 : '<i>Inga mailboxes</i><br>';
 
-                            // ← lägg till mailbox-knappen här, inuti forEach
                            const fullPopup = mailboxHtml + `
                             <button onclick="showAddMailbox(${stop.stop_id})"> Lägg till mailbox</button>
                             <br><br>
@@ -312,7 +332,6 @@
             });
         }
 
-        // ── Fyll dropdown och starta ──────────────────────────
         fetch('http://127.0.0.1:5000/routes')
             .then(response => response.json())
             .then(routes => {

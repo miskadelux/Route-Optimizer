@@ -131,16 +131,36 @@ def add_a_new_stop():
         connection = get_connection()
         cursor = connection.cursor()
 
-        query = "CALL add_stop_to_route(%s, %s, %s)",
-        (district_number, lat, lon)
-        cursor.execute(query, (lat, lon, district_number))
+        cursor.execute("CALL add_stop_to_route(%s, %s, %s)",
+                       (district_number, lat, lon))
         connection.commit()
 
-        return jsonify({"message": "New Stop was inserted"}), 201
+        return jsonify({"message": "New Stop was inserted"}), 200
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+    finally:
+        cursor.close()
+        connection.close()
+
+
+@app.route("/routes/<int:district_number>/reset", methods=["PUT"])
+def reset_all_stops(district_number):
+    try:
+        connection = get_connection()
+        cursor = connection.cursor()
+
+        cursor.execute("""
+        UPDATE Stops
+        Set Stop_status = 'pending', completed_at = NULL
+        WHERE district_number = %s
+        """, (district_number,))
+
+        connection.commit()
+        return jsonify({"message": "ALL stops where reseted"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
     finally:
         cursor.close()
         connection.close()
@@ -311,7 +331,6 @@ def route_optimizer(district_number):
                     "stop_status": row["stop_status"],
                     "mailboxes":  []
                 }
-            # A stop can exist with no mailboxes (LEFT JOIN returns NULL)
             if row["mailbox_id"] is not None:
                 stops[sid]["mailboxes"].append({
                     "mailbox_id": row["mailbox_id"],
